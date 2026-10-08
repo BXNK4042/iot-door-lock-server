@@ -1,0 +1,24 @@
+{
+  "name": "group-6-iot-server",
+  "version": "2.0.0",
+  "description": "IoT Smart Door Access Server (Group 6) - Pure Native Node.js (No Docker - 100% Safe)",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node --watch backend/server.js"
+  },
+  "keywords": [
+    "iot",
+    "smart-door",
+    "group-6",
+    "native-nodejs",
+    "no-docker"
+  ],
+  "author": "Group 6 Engineering Team",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "mqtt": "^5.5.2"
+  }
+}

@@ -1,0 +1,11 @@
+# Dependency directories
+node_modules/
+Group-6-IOT-Server/node_modules/
+
+# Frontend (Frontend is maintained by teammate in their branch)
+Group-6-IOT-Server/frontend/
+
+# OS metadata
+Thumbs.db
+.DS_Store
+

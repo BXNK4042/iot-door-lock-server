@@ -1,0 +1,12 @@
+{
+  "description": "ฐานข้อมูลจำลอง (Demo RADIUS/MySQL Database) สำหรับการทดสอบในกลุ่มที่ 6",
+  "users": {
+    "67200412": {
+      "studentId": "67200412",
+      "password": "rujinat_fah",
+      "name": "Rujinat Fah",
+      "faculty": "Computer Engineering",
+      "status": "ACTIVE"
+    }
+  }
+}
