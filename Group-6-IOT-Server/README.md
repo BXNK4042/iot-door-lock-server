@@ -25,60 +25,41 @@
 
 ---
 
-## 📁 1. แผนผังโครงสร้างโฟลเดอร์ (Directory Structure)
+## 📁 1. แผนผังโครงสร้างโฟลเดอร์สำหรับ Backend (Directory Structure)
 
 ```text
 Group-6-IOT-Server/
 ├── package.json               # จัดการไลบรารีของ Node.js (express, cors, mqtt)
-├── README.md                  # คู่มือภาพรวมทั้งระบบ (ไฟล์นี้)
-├── readme_to_connect.md       # 🚀 คู่มือล้างข้อมูลจำลองและเชื่อมต่อระบบจริงบน Proxmox
+├── README.md                  # คู่มือภาพรวมส่วน Backend (ไฟล์นี้)
 │
-├── backend/                   # 🖥️ ฝั่งหลังบ้าน (Node.js REST API + State + Logger + Simulation)
-│   ├── README.md              # คู่มืออธิบายโค้ดและสถาปัตยกรรมของ Backend
-│   ├── Send-to-front.md       # 📑 เอกสารส่งมอบงานให้ฝั่ง Frontend (สัญญา API + ขอบเขต)
-│   ├── server.js              # จุดเริ่มต้นการรันเซิร์ฟเวอร์ (Entry Point)
-│   ├── mock-data/             # ฐานข้อมูลจำลอง (user: 67200412 / pass: rujinat_fah)
-│   │   ├── README.md
-│   │   └── users.json
-│   ├── routes/
-│   │   └── apiRoutes.js       # จัดการเส้นทาง API Endpoint
-│   ├── controllers/
-│   │   └── doorController.js  # ตรรกะ Auto Check-In, Check-Out, และ Timestamp Comparison
-│   └── services/
-│       ├── stateService.js    # จัดการ In-Memory State ของผู้ใช้ในห้อง
-│       ├── loggerService.js   # โมดูลบันทึกข้อมูลลง log.txt (5 คอลัมน์)
-│       ├── authService.js     # ตรวจสอบสิทธิ์กับ mock-data/users.json
-│       └── mqttService.js     # จำลองการส่งคำสั่งปลดล็อคกลอนประตู
-│
-├── frontend/                  # 🌐 ฝั่งหน้าบ้าน (Mobile Web Responsive รองรับการสแกน QR)
-│   ├── README.md              # คู่มืออธิบาย UI, States และการทำงานของหน้าเว็บ
-│   ├── Send-to-back.md        # 📑 เอกสารส่งมอบงานให้ฝั่ง Backend (สิ่งที่ฝั่งหน้าบ้านต้องการ)
-│   └── public/                # ไฟล์หน้าเว็บจริงที่ผู้ใช้เปิดใช้งาน
-│       ├── index.html         # หน้า Web รวม (Scan QR ➔ Login ➔ Live Dashboard)
-│       ├── css/
-│       │   └── style.css      # ตกแต่งหน้าจอ Responsive สไตล์มือถือ
-│       └── js/
-│           └── app.js         # Client-side Logic (อ่านพารามิเตอร์ URL, Live Timer, Fetch API)
-│
-├── logs/                      # 📝 แหล่งจัดเก็บข้อมูลประวัติการเข้า-ออกห้อง
-│   ├── README.md              # รายละเอียดโครงสร้างคอลัมน์ และการส่งต่อให้กลุ่ม 4
-│   └── log.txt                # ไฟล์บันทึกประวัติจริง (Timestamp | รหัส นศ. | ชื่อ | ห้อง | สถานะ)
-│
-└── docs/                      # 📚 เอกสารประกอบและการเชื่อมต่อกับ Proxmox / เครือข่าย
-    └── README.md              # การตั้งค่า IP วง vmbr1, การทำ Ingress (Public IP / Cloudflare / Playit)
+└── backend/                   # 🖥️ ฝั่งหลังบ้าน (Node.js REST API + State + Logger + Simulation)
+    ├── README.md              # คู่มืออธิบายโค้ดและสถาปัตยกรรมของ Backend
+    ├── Send-to-front.md       # 📑 เอกสารสัญญา API ส่งมอบให้ทีม Frontend นำไปเชื่อมต่อ
+    ├── server.js              # จุดเริ่มต้นการรันเซิร์ฟเวอร์ (Entry Point)
+    ├── mock-data/             # ฐานข้อมูลจำลอง (user: 67200412 / pass: rujinat_fah)
+    │   ├── README.md
+    │   └── users.json
+    ├── routes/
+    │   └── apiRoutes.js       # จัดการเส้นทาง API Endpoint (/api/door/access, /checkout, /logs)
+    ├── controllers/
+    │   └── doorController.js  # ตรรกะ Auto Check-In, Check-Out, และ Room Switch
+    └── services/
+        ├── stateService.js    # จัดการ In-Memory State ของผู้ใช้ในห้อง
+        ├── loggerService.js   # โมดูลบันทึกประวัติ (เวลาไทย, มีเฉพาะ IN/OUT, สร้างโฟลเดอร์ logs อัตโนมัติ)
+        ├── authService.js     # ตรวจสอบสิทธิ์ (รองรับทั้ง Mock และ RADIUS จริง)
+        └── mqttService.js     # จำลองการส่งคำสั่งปลดล็อคกลอนประตู (Door Simulator)
 ```
 
 ---
 
-## 🎯 2. แต่ละโฟลเดอร์คืออะไร มีไว้ทำไม และเก็บอะไรบ้าง?
+## 🎯 2. รายละเอียดไฟล์และส่วนประกอบ Backend
 
-| โฟลเดอร์ | คืออะไร | มีไว้ทำไม | ข้อมูลที่เก็บภายใน | รูปแบบการเก็บข้อมูล |
-|---|---|---|---|---|
-| **`backend/`** | เซิร์ฟเวอร์หลักของกลุ่ม 6 | ประมวลผลคำขอ สั่งการประตู บันทึกประวัติ | โค้ด Logic, State Management, MQTT Client, File Appender | ไฟล์สคริปต์ JavaScript (`.js`) |
-| **`backend/mock-data/`** | ฐานข้อมูลผู้ใช้จำลอง | จำลองข้อมูล RADIUS/MySQL ทดสอบในกลุ่ม | ข้อมูล `67200412` / `rujinat_fah` | JSON File (`users.json`) |
-| **`frontend/`** | เว็บแอปพลิเคชันสำหรับนักศึกษา | เป็น UI ให้ นศ. สแกน QR และกดยืนยันเข้า-ออกห้อง | โครงสร้างหน้าเว็บ, สไตล์ CSS, สคริปต์นาฬิกา Real-time | HTML5, CSS3, Client JS (`.html`, `.css`, `.js`) |
-| **`logs/`** | โฟลเดอร์จัดเก็บข้อมูลประวัติ | เก็บบันทึกการเข้า-ออก เพื่อส่งต่อให้ทีม Web App (กลุ่ม 4) | ข้อมูลประวัติการใช้งานห้องจริงแบบต่อเนื่อง (Append-only) | Plain Text File (`log.txt`) แบ่งด้วยเครื่องหมาย `\|` |
-| **`docs/`** | คลังเอกสารทางเทคนิค | คู่มือการนำขึ้น Proxmox VE และการประสานงานกับกลุ่ม 1, 2, 3, 4 | คำสั่งคอนฟิกเครือข่าย, สเปกของแต่ละ Ingress Option | Markdown Documentation (`.md`) |
+| โฟลเดอร์/ไฟล์ | คืออะไร | มีไว้ทำไม | ข้อมูลที่เก็บภายใน |
+|---|---|---|---|
+| **`backend/`** | เซิร์ฟเวอร์หลักของกลุ่ม 6 | ประมวลผลคำขอ สั่งการประตู บันทึกประวัติ | โค้ด Logic, State Management, MQTT Client, Logger |
+| **`backend/Send-to-front.md`** | สัญญา API สำหรับทีมหน้าบ้าน | ส่งมอบให้เพื่อนทีม Frontend นำไปเชื่อมต่อหน้าเว็บ | รูปแบบ JSON Request/Response, Endpoints ทั้งหมด |
+| **`backend/mock-data/`** | ฐานข้อมูลผู้ใช้จำลอง | จำลองข้อมูล RADIUS/MySQL ทดสอบในกลุ่ม | ข้อมูล `67200412` / `rujinat_fah` |
+| **`package.json`** | จัดการ Dependencies | กำหนด Express, CORS, MQTT สำหรับรันเซิร์ฟเวอร์ | รายชื่อไลบรารีและคำสั่งรันระบบ (`npm start`) |
 
 ---
 

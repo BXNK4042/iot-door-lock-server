@@ -37,6 +37,12 @@ function writeLog(studentId, studentName, roomId, actionStatus) {
         // จัด Format คอลัมน์ให้ตรงกันเพื่อความสวยงามและง่ายต่อการ Parse
         const formattedLine = `[${timestamp}] | ${String(studentId).padEnd(8, ' ')} | ${String(studentName).padEnd(20, ' ')} | ${String(roomId).padEnd(8, ' ')} | ${actionStatus}\n`;
 
+        // ตรวจสอบและสร้างโฟลเดอร์ logs อัตโนมัติหากยังไม่มี
+        const logDir = path.dirname(LOG_FILE_PATH);
+        if (!fs.existsSync(logDir)) {
+            fs.mkdirSync(logDir, { recursive: true });
+        }
+
         // บันทึกแบบ Append (ต่อท้ายไฟล์)
         fs.appendFileSync(LOG_FILE_PATH, formattedLine, 'utf8');
         console.log(`[LOGGER] บันทึกสำเร็จ (เวลาไทย): ${formattedLine.trim()}`);

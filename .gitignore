@@ -5,6 +5,12 @@ Group-6-IOT-Server/node_modules/
 # Frontend (Frontend is maintained by teammate in their branch)
 Group-6-IOT-Server/frontend/
 
+# Local guides, runtime logs & presentations (Kept locally on machine, not for merge)
+Group-6-IOT-Server/docs/
+Group-6-IOT-Server/logs/
+Group-6-IOT-Server/test.md
+Group-6-IOT-Server/readme_to_connect.md
+
 # OS metadata
 Thumbs.db
 .DS_Store
