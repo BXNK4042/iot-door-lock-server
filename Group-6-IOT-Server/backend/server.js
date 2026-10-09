@@ -17,6 +17,34 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// รายชื่อห้องทั้งหมดที่รองรับในระบบ (8 ห้อง)
+const VALID_ROOMS = ['B316', 'B317', 'B217', 'B218', 'E111', 'E112', 'E113', 'E107'];
+
+// Normalize query parameter: ถ้ามี ?room เป็นตัวพิมพ์เล็ก ให้ Redirect เป็นตัวพิมพ์ใหญ่เสมอ
+app.get(['/', '/index.html', '/login.html'], (req, res, next) => {
+    if (req.query.room) {
+        const requestedRoom = req.query.room.trim().toUpperCase();
+        if (req.query.room !== requestedRoom) {
+            return res.redirect(302, `/?room=${requestedRoom}`);
+        }
+    }
+    next();
+});
+
+// Endpoint ดึงรายชื่อห้องทั้งหมด
+app.get('/api/rooms', (req, res) => {
+    res.json({
+        success: true,
+        defaultRoom: 'B316',
+        total: VALID_ROOMS.length,
+        rooms: VALID_ROOMS.map(roomId => ({
+            id: roomId,
+            name: `ห้อง ${roomId}`,
+            url: `/?room=${roomId}`
+        }))
+    });
+});
+
 // เสิร์ฟไฟล์ Static ของ Frontend โดยตรงจากโฟลเดอร์ frontend/public และ frontend/logo
 const FRONTEND_DIR = path.join(__dirname, '..', 'frontend', 'public');
 const LOGO_DIR = path.join(__dirname, '..', 'frontend', 'logo');

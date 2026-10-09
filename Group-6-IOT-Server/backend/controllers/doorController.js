@@ -39,22 +39,8 @@ async function handleDoorAccess(req, res) {
         const previousSession = stateService.getUserSession(studentId);
 
         if (previousSession) {
-            // กรณี A: สแกนห้องเดิมที่ตนเองอยู่แล้ว ➔ คืนค่าเดิมให้หน้าจอแสดง Live Timer ต่อ
-            if (previousSession.room === targetRoom) {
-                return res.json({
-                    success: true,
-                    status: 'ALREADY_IN_THIS_ROOM',
-                    message: `คุณอยู่ในห้อง ${targetRoom} อยู่แล้ว`,
-                    room: targetRoom,
-                    studentId: studentId,
-                    studentName: studentName,
-                    enteredAt: previousSession.enteredAt
-                });
-            }
-
-            // กรณี B: มีประวัติอยู่ในห้องเดิม แล้วมาสแกนห้องใหม่
-            // ➔ ทำการตัดจบห้องเดิมด้วยสถานะ OUT ทันที
-            console.log(`[ROOM-SWITCH] ตรวจพบผู้ใช้ ${studentId} สลับจากห้อง ${previousSession.room} มาเข้าห้อง ${targetRoom}`);
+            // ไม่ว่าจะเข้าห้องเดิมหรือห้องใหม่ เมื่อมีการล็อกอินใหม่ ให้ตัดจบ Session เดิมเป็น OUT ทันที
+            console.log(`[SESSION-RESET] ตรวจพบผู้ใช้ ${studentId} ล็อกอินเข้าห้อง ${targetRoom} (เดิมอยู่ห้อง ${previousSession.room}) ➔ ตัดจบ Session เดิมเป็น OUT`);
             
             // บันทึก Log ออกจากห้องเดิมเป็นสถานะ OUT
             loggerService.writeLog(studentId, studentName, previousSession.room, 'OUT');
@@ -80,7 +66,8 @@ async function handleDoorAccess(req, res) {
             room: targetRoom,
             studentId: studentId,
             studentName: studentName,
-            enteredAt: currentTime.toISOString()
+            enteredAt: currentTime.toISOString(),
+            serverTime: currentTime.toISOString()
         });
 
     } catch (error) {
@@ -193,7 +180,8 @@ function handleGetSessionStatus(req, res) {
         hasActiveSession: true,
         isCurrentRoom: isCurrentRoom,
         currentRoom: session.room,
-        session: session
+        session: session,
+        serverTime: new Date().toISOString()
     });
 }
 
