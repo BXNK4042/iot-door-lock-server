@@ -7,6 +7,13 @@
       "name": "Rujinat Fah",
       "faculty": "Computer Engineering",
       "status": "ACTIVE"
+    },
+    "67200324": {
+      "studentId": "67200324",
+      "password": "1234",
+      "name": "Leo Ev (67200324)",
+      "faculty": "Computer Engineering",
+      "status": "ACTIVE"
     }
   }
 }

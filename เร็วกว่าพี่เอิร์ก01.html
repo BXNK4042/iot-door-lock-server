@@ -103,7 +103,39 @@
       -webkit-appearance: none;
     }
 
-    .input-group input:focus {
+        .password-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    .password-wrapper input {
+      width: 100%;
+      padding-right: 44px;
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      transition: color 0.2s;
+    }
+
+    .toggle-password:hover {
+      color: #fff;
+    }
+
+.input-group input:focus {
       border-color: #6366f1;
       box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
     }
@@ -496,7 +528,12 @@
 
       <div class="input-group">
         <label for="password">รหัสผ่าน</label>
-        <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+        <div class="password-wrapper">
+          <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+          <button type="button" class="toggle-password" id="togglePasswordBtn" title="แสดง/ซ่อนรหัสผ่าน" aria-label="แสดง/ซ่อนรหัสผ่าน">
+            <span id="eyeIcon">👁️</span>
+          </button>
+        </div>
       </div>
 
       <button type="submit" class="btn btn-login" id="submitBtn">เข้าสู่ระบบ</button>
@@ -534,15 +571,18 @@
 
   <script>
     // ========================================================
-    // การตั้งค่า API สำหรับเชื่อมต่อระบบจริง
+    // การตั้งค่า API สำหรับเชื่อมต่อระบบ IoT Server (Group 6)
+    // ตามสัญญา API ใน backend/Send-to-front.md
     // ========================================================
-    const AUTH_API_URL = '/api/auth/login';       // API ยืนยันตัวตน (กลุ่ม 4)
-    const LOG_API_URL = '/api/iot/logs';          // API บันทึกประวัติการใช้ห้อง
+    const API_DOOR_ACCESS = '/api/door/access';
+    const API_DOOR_CHECKOUT = '/api/door/checkout';
+    const API_SESSION = '/api/session';
 
     let timerInterval = null;
+    let heartbeatInterval = null;
     let checkInTimestamp = null;
-    let currentUser = null;
-    let activeRoom = 'E113'; // ค่าเริ่มต้นหากไม่มี QR Code param
+    let currentUser = null; // { studentId, name }
+    let activeRoom = 'LAB-401'; // Default room
 
     const loginCard = document.getElementById('loginCard');
     const loggedInContainer = document.getElementById('loggedInContainer');
@@ -557,11 +597,27 @@
     const timerText = document.getElementById('timerText');
     const sessionWarningBanner = document.getElementById('sessionWarningBanner');
     const warnCurrentRoom = document.getElementById('warnCurrentRoom');
+    const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+    const eyeIcon = document.getElementById('eyeIcon');
+
+    // Toggle Show/Hide Password
+    if (togglePasswordBtn) {
+      togglePasswordBtn.addEventListener('click', () => {
+        if (passwordInput.type === 'password') {
+          passwordInput.type = 'text';
+          if (eyeIcon) eyeIcon.textContent = '🙈';
+        } else {
+          passwordInput.type = 'password';
+          if (eyeIcon) eyeIcon.textContent = '👁️';
+        }
+      });
+    }
 
     // ดึงหมายเลขห้องจาก URL Query (?room=...)
     function getScannedRoomFromURL() {
       const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get('room') ? urlParams.get('room').toUpperCase() : null;
+      const room = urlParams.get('room');
+      return room ? room.trim().toUpperCase() : null;
     }
 
     function updateRoomDisplays() {
@@ -570,93 +626,106 @@
     }
 
     // ตรวจสอบสถานะเมื่อเปิดหน้าเว็บ
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
       const scannedRoom = getScannedRoomFromURL();
       const savedSessionRoom = localStorage.getItem('session_room');
+      const savedUserStr = localStorage.getItem('session_user');
 
-      if (isLoggedIn && savedSessionRoom) {
-        // กฎการล็อกเซสชัน: หากยังไม่ล็อกเอ้าท์ ให้ค้างอยู่ที่หน้าล็อกเอ้าท์ของห้องเดิม
-        activeRoom = savedSessionRoom;
-        currentUser = JSON.parse(localStorage.getItem('session_user') || '{}');
-        checkInTimestamp = new Date(localStorage.getItem('session_checkin'));
+      if (isLoggedIn && savedSessionRoom && savedUserStr) {
+        try {
+          currentUser = JSON.parse(savedUserStr);
+        } catch (e) {
+          currentUser = null;
+        }
+      }
 
-        displayUserName.textContent = currentUser.name || currentUser.username || 'ผู้ใช้งาน';
+      if (currentUser && currentUser.studentId) {
+        // กฎการล็อกเซสชัน: มีประวัติล็อกอินค้างอยู่
+        activeRoom = savedSessionRoom || 'LAB-401';
+        displayUserName.textContent = currentUser.name || currentUser.studentId;
         updateRoomDisplays();
-        startTimer();
 
-        // แจ้งเตือนหากสแกน QR ห้องอื่นเข้ามา
-        if (scannedRoom && scannedRoom !== savedSessionRoom) {
+        const savedCheckIn = localStorage.getItem('session_checkin');
+        if (savedCheckIn) {
+          checkInTimestamp = new Date(savedCheckIn);
+          startTimer(checkInTimestamp);
+        }
+
+        // ตรวจสอบว่าสแกน QR ห้องอื่นมาหรือไม่
+        if (scannedRoom && scannedRoom !== activeRoom) {
           sessionStorage.setItem('pending_room', scannedRoom);
-          warnCurrentRoom.textContent = savedSessionRoom;
-          sessionWarningBanner.style.display = 'block';
+          if (warnCurrentRoom) warnCurrentRoom.textContent = activeRoom;
+          if (sessionWarningBanner) sessionWarningBanner.style.display = 'block';
         } else {
-          sessionWarningBanner.style.display = 'none';
+          if (sessionWarningBanner) sessionWarningBanner.style.display = 'none';
         }
 
         showLoggedInView();
+        startHeartbeatSync();
+
+        // ซิงก์สถานะทันทีกับ Backend
+        syncSessionWithBackend(currentUser.studentId, activeRoom);
       } else {
-        // ยังไม่ได้ล็อกอิน: ใช้ห้องจาก QR Code ล่าสุด
-        activeRoom = scannedRoom || localStorage.getItem('currentRoom') || 'E113';
+        // ยังไม่ได้ล็อกอิน: ใช้ห้องจาก QR Code หรือค่า default
+        activeRoom = scannedRoom || localStorage.getItem('currentRoom') || 'LAB-401';
         localStorage.setItem('currentRoom', activeRoom);
         updateRoomDisplays();
         showLoginView();
       }
     });
 
-    // ยิงตรวจสอบตัวตนไปยัง Authentication API
-    async function authenticateUser(username, password, room) {
-      try {
-        const response = await fetch(AUTH_API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password, room })
-        });
-
-        if (response.ok) {
-          return await response.json();
-        } else {
-          throw new Error('รหัสไม่ถูกต้อง');
-        }
-      } catch (err) {
-        // Fallback รองรับกรณีเซิร์ฟเวอร์ออฟไลน์/ทดสอบระบบ
-        if (username === 'admin' && password === 'admin') {
-          return { status: 'success', user: { username: 'admin', name: 'อาจารย์ผู้ดูแลระบบ' } };
-        } else if (username && password === '1234') {
-          return { status: 'success', user: { username: username, name: 'นายสมชาย ใจดี (' + username + ')' } };
-        }
-        throw new Error('รหัสไม่ถูกต้อง');
-      }
-    }
-
+    // 🔹 API 1: สแกน Login เข้าห้อง (Auto Check-In)
     async function handleLogin(event) {
       event.preventDefault();
-      const user = usernameInput.value.trim();
-      const pass = passwordInput.value.trim();
+      const studentId = usernameInput.value.trim();
+      const password = passwordInput.value.trim();
+
+      if (!studentId || !password) return;
 
       submitBtn.disabled = true;
       submitBtn.textContent = 'กำลังตรวจสอบสิทธิ์...';
       errorMsg.style.display = 'none';
 
       try {
-        const response = await authenticateUser(user, pass, activeRoom);
+        const response = await fetch(API_DOOR_ACCESS, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            studentId: studentId,
+            password: password,
+            targetRoom: activeRoom
+          })
+        });
 
-        // ยืนยันตัวตนสำเร็จ: เก็บข้อมูลเซสชันและเริ่มจับเวลา
-        currentUser = response.user;
-        checkInTimestamp = new Date();
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง');
+        }
+
+        // สำเร็จ: บันทึก Session และเริ่มจับเวลา
+        currentUser = {
+          studentId: data.studentId,
+          name: data.studentName || data.studentId
+        };
+        activeRoom = data.room || activeRoom;
+        checkInTimestamp = new Date(data.enteredAt || new Date());
 
         localStorage.setItem('session_user', JSON.stringify(currentUser));
         localStorage.setItem('session_checkin', checkInTimestamp.toISOString());
         localStorage.setItem('session_room', activeRoom);
         localStorage.setItem('isLoggedIn', 'true');
 
-        displayUserName.textContent = currentUser.name || currentUser.username;
-        sessionWarningBanner.style.display = 'none';
+        displayUserName.textContent = currentUser.name;
+        if (sessionWarningBanner) sessionWarningBanner.style.display = 'none';
         updateRoomDisplays();
-        startTimer();
+        startTimer(checkInTimestamp);
+        startHeartbeatSync();
         showLoggedInView();
+
       } catch (err) {
-        errorMsg.textContent = 'รหัสไม่ถูกต้อง';
+        errorMsg.textContent = err.message || 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง';
         errorMsg.style.display = 'block';
         passwordInput.value = '';
         passwordInput.focus();
@@ -666,13 +735,122 @@
       }
     }
 
-    function startTimer() {
+    // 🔹 API 2: กดปุ่มออกจากห้อง (Check-Out)
+    async function handleLogout() {
+      const logoutBtn = document.querySelector('.btn-logout');
+      if (logoutBtn) {
+        logoutBtn.disabled = true;
+        logoutBtn.textContent = 'กำลังออกจากระบบ...';
+      }
+
+      try {
+        if (currentUser && currentUser.studentId) {
+          const response = await fetch(API_DOOR_CHECKOUT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              studentId: currentUser.studentId,
+              room: activeRoom
+            })
+          });
+
+          const data = await response.json();
+          if (!response.ok && data.status === 'ROOM_MISMATCH') {
+            console.warn('[CHECKOUT] Room mismatch:', data);
+          }
+        }
+      } catch (err) {
+        console.error('[CHECKOUT ERROR]', err);
+      } finally {
+        resetSessionToLoginView();
+        if (logoutBtn) {
+          logoutBtn.disabled = false;
+          logoutBtn.textContent = 'ออกจากระบบ';
+        }
+      }
+    }
+
+    function resetSessionToLoginView() {
+      stopHeartbeatSync();
       if (timerInterval) clearInterval(timerInterval);
+
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('session_user');
+      localStorage.removeItem('session_checkin');
+      localStorage.removeItem('session_room');
+      currentUser = null;
+      checkInTimestamp = null;
+      if (sessionWarningBanner) sessionWarningBanner.style.display = 'none';
+
+      // ตรวจสอบว่ามีห้องใหม่ที่เพิ่งสแกนค้างไว้หรือไม่
+      const pendingRoom = sessionStorage.getItem('pending_room');
+      if (pendingRoom) {
+        activeRoom = pendingRoom;
+        sessionStorage.removeItem('pending_room');
+      } else {
+        const urlRoom = getScannedRoomFromURL();
+        if (urlRoom) activeRoom = urlRoom;
+      }
+      localStorage.setItem('currentRoom', activeRoom);
+
+      loginForm.reset();
+      errorMsg.style.display = 'none';
+      updateRoomDisplays();
+      showLoginView();
+    }
+
+    // 🔹 API 3: ตรวจสอบสถานะ Session (Heartbeat Sync ทุก 2.5 วินาที)
+    async function syncSessionWithBackend(studentId, room) {
+      try {
+        const res = await fetch(`${API_SESSION}/${encodeURIComponent(studentId)}?room=${encodeURIComponent(room)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        if (data.success) {
+          if (!data.hasActiveSession) {
+            // หมด Session แล้ว
+            resetSessionToLoginView();
+          } else if (!data.isCurrentRoom) {
+            // สลับห้องอัตโนมัติ (Smart Timestamp Comparison)
+            activeRoom = data.currentRoom;
+            localStorage.setItem('session_room', activeRoom);
+            updateRoomDisplays();
+            if (data.session && data.session.enteredAt) {
+              checkInTimestamp = new Date(data.session.enteredAt);
+              localStorage.setItem('session_checkin', checkInTimestamp.toISOString());
+              startTimer(checkInTimestamp);
+            }
+          }
+        }
+      } catch (e) {
+        // network issue, silently continue
+      }
+    }
+
+    function startHeartbeatSync() {
+      stopHeartbeatSync();
+      heartbeatInterval = setInterval(() => {
+        if (currentUser && currentUser.studentId) {
+          syncSessionWithBackend(currentUser.studentId, activeRoom);
+        }
+      }, 2500);
+    }
+
+    function stopHeartbeatSync() {
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null;
+      }
+    }
+
+    // ฟังก์ชันนาฬิกา Real-time Stopwatch
+    function startTimer(startTime) {
+      if (timerInterval) clearInterval(timerInterval);
+      if (!startTime) startTime = checkInTimestamp || new Date();
       
       const update = () => {
-        if (!checkInTimestamp) return;
         const now = new Date();
-        const diffSeconds = Math.max(0, Math.floor((now - checkInTimestamp) / 1000));
+        const diffSeconds = Math.max(0, Math.floor((now - startTime) / 1000));
         timerText.textContent = formatDuration(diffSeconds);
       };
 
@@ -687,67 +865,6 @@
       return `${h}:${m}:${s}`;
     }
 
-    function formatDateTime(date) {
-      return new Date(date).toLocaleString('th-TH', { hour12: false });
-    }
-
-    async function handleLogout() {
-      const checkOutTimestamp = new Date();
-      const durationSeconds = Math.max(1, Math.floor((checkOutTimestamp - checkInTimestamp) / 1000));
-
-      const logEntry = {
-        log_id: 'LOG_' + Date.now().toString().slice(-6),
-        room: activeRoom,
-        username: currentUser ? currentUser.username : 'unknown',
-        name: currentUser ? (currentUser.name || currentUser.username) : 'Unknown User',
-        check_in: formatDateTime(checkInTimestamp),
-        check_out: formatDateTime(checkOutTimestamp),
-        duration_seconds: durationSeconds,
-        duration_formatted: formatDuration(durationSeconds)
-      };
-
-      // 1. บันทึก Log ไปยัง IoT Server / Backend
-      try {
-        fetch(LOG_API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(logEntry)
-        }).catch(() => {});
-      } catch(e) {}
-
-      // บันทึก Log สำรองในเครื่อง
-      const logs = JSON.parse(localStorage.getItem('room_access_logs') || '[]');
-      logs.unshift(logEntry);
-      localStorage.setItem('room_access_logs', JSON.stringify(logs));
-
-      // 2. เคลียร์ Session ปัจจุบัน
-      if (timerInterval) clearInterval(timerInterval);
-      localStorage.removeItem('isLoggedIn');
-      localStorage.removeItem('session_user');
-      localStorage.removeItem('session_checkin');
-      localStorage.removeItem('session_room');
-      currentUser = null;
-      checkInTimestamp = null;
-      sessionWarningBanner.style.display = 'none';
-
-      // 3. ตรวจสอบว่ามีห้องใหม่ที่เพิ่งสแกนค้างไว้หรือไม่
-      const pendingRoom = sessionStorage.getItem('pending_room');
-      if (pendingRoom) {
-        activeRoom = pendingRoom;
-        sessionStorage.removeItem('pending_room');
-      } else {
-        const urlRoom = getScannedRoomFromURL();
-        if (urlRoom) activeRoom = urlRoom;
-      }
-      localStorage.setItem('currentRoom', activeRoom);
-
-      // 4. แสดงหน้าฟอร์มล็อกอินกลับมาอีกครั้ง
-      loginForm.reset();
-      errorMsg.style.display = 'none';
-      updateRoomDisplays();
-      showLoginView();
-    }
-
     function showLoggedInView() {
       loginCard.style.display = 'none';
       loggedInContainer.style.display = 'flex';
@@ -758,5 +875,4 @@
       loginCard.style.display = 'block';
     }
   </script>
-</body>
 </html>
