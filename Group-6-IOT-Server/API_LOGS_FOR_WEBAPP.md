@@ -1,8 +1,8 @@
 # 📑 คู่มือการดึง Access Logs จากกลุ่ม 6 (IoT Server)
-### สำหรับทีม Web Application / Dashboard (กลุ่ม 4 / กลุ่ม 5)
+### สำหรับทีม Web Application / Dashboard (กลุ่ม 5)
 
 > **จาก:** ทีมกลุ่ม 6 (IoT Server & Door Access System)  
-> **ถึง:** ทีมพัฒนา Web Application / Dashboard  
+> **ถึง:** ทีมพัฒนา Web Application & Dashboard (กลุ่ม 5)  
 > **วัตถุประสงค์:** อธิบายวิธีเรียกใช้งาน API Endpoint เพื่อดึงประวัติการเข้า-ออกห้องเรียน/ห้องแล็บ (Access Logs) แบบ Real-time ไปแสดงผลบนแดชบอร์ด
 
 ---
