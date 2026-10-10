@@ -19,14 +19,14 @@ try {
 }
 
 // การตั้งค่าสำหรับการเชื่อมต่อกลุ่ม 1 (RADIUS Server)
-const RADIUS_HOST = process.env.RADIUS_HOST || '10.10.10.11';
+const RADIUS_HOST = process.env.RADIUS_HOST || '192.168.100.101';
 const RADIUS_PORT = parseInt(process.env.RADIUS_PORT || '1812', 10);
 const RADIUS_SECRET = process.env.RADIUS_SECRET || 'testing123';
-const NAS_IP = process.env.NAS_IP || '10.10.10.16'; // IP ของ VM กลุ่ม 6 บน Proxmox
+const NAS_IP = process.env.NAS_IP || '192.168.100.106'; // IP ของ VM กลุ่ม 6 บน Proxmox
 const AUTH_TIMEOUT_MS = parseInt(process.env.AUTH_TIMEOUT_MS || '3000', 10);
 
 // การตั้งค่าสำหรับการเชื่อมต่อผ่าน REST API (ถ้ากลุ่ม 1 หรือกลุ่ม 4 ให้บริการ HTTP)
-const AUTH_API_URL = process.env.AUTH_API_URL || 'http://10.10.10.11:4000/api/auth/login';
+const AUTH_API_URL = process.env.AUTH_API_URL || 'http://192.168.100.101:4000/api/auth/login';
 
 // โหมดการทำงาน: 'PRODUCTION' (ค่าเริ่มต้นใช้งานจริง) หรือ 'MOCK' (สำหรับทดสอบออฟไลน์)
 const AUTH_MODE = process.env.AUTH_MODE || 'PRODUCTION';
