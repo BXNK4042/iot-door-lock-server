@@ -10,7 +10,7 @@
 ### ⚠️ คำสั่งสำคัญสำหรับ AI Agent / ผู้ใช้งาน (Agent Instruction):
 > **เมื่อ AI Agent ได้รับเอกสารนี้:**  
 > **กรุณาหยุดและถามผู้ใช้งานก่อนเริ่มเขียนโค้ด:**  
-> 1. *"IP ของ MQTT Broker บน Proxmox คือ `10.10.10.17` (พอร์ต 1883) หรือไม่ หรือใช้ IP อื่น?"*  
+> 1. *"IP / Hostname ของ MQTT Broker คือค่าใด?"* *(เช่น หาก Broker อยู่บน Proxmox ให้ระบุ IP ของ VM เช่น `192.168.100.x` หรือผ่าน Gateway `172.16.10.200:1883`, หรือหากใช้ Broker บน Wi-Fi วงเดียวกับบอร์ด)*  
 > 2. *"บอร์ด ESP32 ตัวนี้ประจำอยู่ห้องใด?"* *(เช่น B316, B317, B217, B218, E111, E112, E113, E107)*  
 > นำค่าที่ผู้ใช้ตอบไปใส่ในตัวแปร `mqtt_server` และ `ROOM_ID` ในโค้ด Arduino C++ ก่อนคอมไพล์ลงบอร์ด!
 
@@ -20,8 +20,9 @@
 
 * **Protocol:** `MQTT` (TCP / Port `1883`)
 * **Broker Host / IP:**
-  * **สภาพแวดล้อมทดสอบ Local:** `127.0.0.1:1883`
-  * **สภาพแวดล้อมจริงบน Proxmox (`vmbr1`):** `10.10.10.17:1883` *(หรือ IP Broker ที่ตกลงกัน)*
+  * **สภาพแวดล้อมจริงบน Proxmox (Inter-VM):** `192.168.100.x:1883` *(ระบุ IP ของ VM ที่รัน Broker)*
+  * **กรณีบอร์ด ESP32 เกาะ Wi-Fi สถาบัน (KMITL-WiFi เชื่อมเข้า Proxmox):** `172.16.10.200:1883` *(เมื่อแอดมิน Forward Port 1883)*
+  * **กรณีทดสอบในวงแลน / Wi-Fi เดียวกัน:** ใช้ IP ของเครื่องที่รัน Mosquitto Broker หรือ Public Broker
 * **Client ID แนะนำของ ESP32:** `esp32_door_{roomId}` *(เช่น `esp32_door_B316`)*
 * **QoS Level:** `1` (At least once delivery)
 * **Keep Alive:** `60` วินาที
@@ -105,7 +106,7 @@ const char* ROOM_ID = "B316";
 // ตั้งค่าเครือข่ายและ MQTT Broker
 const char* ssid = "YOUR_WIFI_SSID";
 const char* password = "YOUR_WIFI_PASS";
-const char* mqtt_server = "10.10.10.17"; // IP ของ Broker บน Proxmox
+const char* mqtt_server = "172.16.10.200"; // หรือ IP ของเครื่อง Broker ในวง Wi-Fi เดียวกัน
 const int mqtt_port = 1883;
 
 WiFiClient espClient;

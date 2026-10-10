@@ -10,21 +10,21 @@
 ### ⚠️ คำสั่งสำคัญสำหรับ AI Agent / ผู้ใช้งาน (Agent Instruction):
 > **เมื่อ AI Agent ได้รับเอกสารนี้:**  
 > **กรุณาหยุดและถามผู้ใช้งานก่อนเริ่มตั้งค่า:**  
-> 1. *"IP ของเซิร์ฟเวอร์ RADIUS กลุ่ม 1 คือ `10.10.10.11` หรือไม่ หรือตั้งค่าเป็น IP ใดบน Proxmox?"*  
+> 1. *"IP ของเซิร์ฟเวอร์ RADIUS กลุ่ม 1 บน Proxmox คือ `192.168.100.101` (VM 101) หรือไม่ หรือตั้งค่าเป็น IP ใด?"*  
 > 2. *"Shared Secret ที่ต้องการใช้คือ `testing123` หรือต้องการเปลี่ยนเป็นรหัสอื่น?"*  
-> 3. *"IP ของ IoT Server กลุ่ม 6 ที่จะส่งคำขอมาคือ `10.10.10.16` ถูกต้องหรือไม่?"*  
+> 3. *"IP ของ IoT Server กลุ่ม 6 ที่จะส่งคำขอมาคือ `192.168.100.106` (VM 106) ถูกต้องหรือไม่?"*  
 > นำค่าที่ยืนยันไปใส่ในไฟล์ `clients.conf` ของ FreeRADIUS และแจ้งกลุ่ม 6 ให้ตรงกันก่อนเริ่มรัน!
 
 ---
 
 ## 🌐 1. ข้อมูลเครือข่ายและการเชื่อมต่อ (Network Configuration)
 
-กลุ่ม 6 ทำหน้าที่เป็น **NAS Client (Network Access Server)** ส่งแพ็กเกจ `Access-Request` ไปยัง RADIUS Server ของกลุ่ม 1 บน Proxmox VE วงแลนเสมือน `vmbr1`:
+กลุ่ม 6 ทำหน้าที่เป็น **NAS Client (Network Access Server)** ส่งแพ็กเกจ `Access-Request` ไปยัง RADIUS Server ของกลุ่ม 1 บน Proxmox VE วงแลนภายใน `192.168.100.x`:
 
 | รายการ | ค่าที่ใช้ | คำอธิบาย |
 |---|---|---|
-| **NAS Client IP (กลุ่ม 6)** | `10.10.10.16` | IP ของเซิร์ฟเวอร์กลุ่ม 6 (VM 106 บน Proxmox) |
-| **RADIUS Server IP (กลุ่ม 1)** | `10.10.10.11` | *(หรือ IP ที่กลุ่ม 1 กำหนดบนวงแลนเดียวกัน)* |
+| **NAS Client IP (กลุ่ม 6)** | `192.168.100.106` | IP ของเซิร์ฟเวอร์กลุ่ม 6 (VM 106 บน Proxmox) |
+| **RADIUS Server IP (กลุ่ม 1)** | `192.168.100.101` | IP ของเซิร์ฟเวอร์กลุ่ม 1 (VM 101 บน Proxmox) |
 | **Authentication Port** | `UDP 1812` | พอร์ตมาตรฐาน RADIUS Authentication |
 | **Accounting Port** | `UDP 1813` | พอร์ตมาตรฐาน RADIUS Accounting |
 | **Shared Secret** | `testing123` | คีย์ลับร่วมกันระหว่างกลุ่ม 6 กับกลุ่ม 1 *(สามารถปรับเปลี่ยนได้ตามที่กลุ่ม 1 กำหนด)* |
@@ -37,8 +37,8 @@
 เพื่อให้ RADIUS Server ยอมรับแพ็กเกจจากกลุ่ม 6 ทีมกลุ่ม 1 ต้องเพิ่มการตั้งค่าต่อไปนี้ลงในไฟล์ `/etc/freeradius/3.0/clients.conf` (หรือตำแหน่งคอนฟิกของ FreeRADIUS):
 
 ```text
-client 10.10.10.16 {
-    ipaddr      = 10.10.10.16
+client 192.168.100.106 {
+    ipaddr      = 192.168.100.106
     secret      = testing123
     shortname   = iot-door-server-group6
     nas_type    = other
@@ -60,7 +60,7 @@ Secret: testing123
 Attributes:
   • User-Name (1)       = "67200412"         # รหัสนักศึกษาของผู้ใช้งาน
   • User-Password (2)   = "password_here"   # รหัสผ่านของนักศึกษา
-  • NAS-IP-Address (4)  = 10.10.10.16       # IP ของเครื่องกลุ่ม 6
+  • NAS-IP-Address (4)  = 192.168.100.106   # IP ของเครื่องกลุ่ม 6
 ```
 
 ---
@@ -77,7 +77,7 @@ RADIUS Server ของกลุ่ม 1 ต้องดึงข้อมูล
 
 ### กรณีที่ 2: รหัสไม่ถูกต้อง หรือไม่มีสิทธิ์ (Authentication Failed)
 * **Packet Code:** `Access-Reject` (3)
-* กลุ่ม 6 จะปฏิเสธการเข้าห้อง กลอนประตูไม่เปิด และแจ้งเตือนผู้ใช้งานหน้าเว็บ
+* **กลุ่ม 6 จะปฏิเสธการเข้าห้อง กลอนประตูไม่เปิด และแจ้งเตือนผู้ใช้งานหน้าเว็บ
 
 ---
 
@@ -87,12 +87,12 @@ RADIUS Server ของกลุ่ม 1 ต้องดึงข้อมูล
 
 ```bash
 # รูปแบบ: radtest <username> <password> <radius-server-ip> <port> <shared-secret>
-radtest 67200412 rujinat_fah 10.10.10.11 1812 testing123
+radtest 67200412 rujinat_fah 192.168.100.101 1812 testing123
 ```
 
 **ผลลัพธ์ที่ถูกต้อง:**
 ```text
-Received Access-Accept Id 1 from 10.10.10.11:1812 to 10.10.10.16:xxxxx length xx
+Received Access-Accept Id 1 from 192.168.100.101:1812 to 192.168.100.106:xxxxx length xx
 ```
 
 ---

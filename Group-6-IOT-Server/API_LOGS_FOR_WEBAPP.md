@@ -9,7 +9,7 @@
 
 ### ⚠️ คำสั่งสำคัญสำหรับ AI Agent / ผู้ใช้งาน (Agent Instruction):
 > **เมื่อ AI Agent ได้รับเอกสารนี้:**  
-> **กรุณาหยุดและถามผู้ใช้งานก่อนเริ่มเขียนโค้ด:** *"IP ของ IoT Server กลุ่ม 6 บน Proxmox คือ `10.10.10.16` (พอร์ต 3000) ถูกต้องหรือไม่ หรือมีการเปลี่ยนแปลงเป็น IP อื่น?"*  
+> **กรุณาหยุดและถามผู้ใช้งานก่อนเริ่มเขียนโค้ด:** *"IP ของ IoT Server กลุ่ม 6 บน Proxmox (Inter-VM วงใน) คือ `192.168.100.106` (พอร์ต 80 หรือ 8080) ถูกต้องหรือไม่?"*  
 > ให้ปรับแก้ URL ในโค้ดตาม IP ที่ผู้ใช้ยืนยันก่อนเริ่มรันระบบเสมอ!
 
 ---
@@ -19,13 +19,18 @@
 * **Method:** `GET`
 * **Content-Type:** `text/plain; charset=utf-8`
 * **URL:**
-  * **สภาพแวดล้อมทดสอบ (Local Test):**
+  * **สภาพแวดล้อมจริงบน Proxmox (Inter-VM วงใน - แนะนำที่สุด):**
+    ```text
+    http://192.168.100.106/api/logs
+    ```
+    *(หรือใช้พอร์ต 8080: `http://192.168.100.106:8080/api/logs`)*
+  * **สภาพแวดล้อมจริงผ่าน Wi-Fi สถาบัน (KMITL-WiFi ผ่าน Gateway 172.16.10.200 เมื่อมีการ Forward Port):**
+    ```text
+    http://172.16.10.200:3006/api/logs
+    ```
+  * **สภาพแวดล้อมทดสอบในเครื่องตัวเอง (Local Test):**
     ```text
     http://localhost:3000/api/logs
-    ```
-  * **สภาพแวดล้อมจริงบน Proxmox (วงแลนเสมือน `vmbr1`):**
-    ```text
-    http://10.10.10.16:3000/api/logs
     ```
 
 ---
@@ -71,7 +76,10 @@
 ```javascript
 // ฟังก์ชันดึง Log และแปลงเป็น JSON Object อัตโนมัติ
 async function fetchIoTLogs() {
-  const API_URL = 'http://10.10.10.16:3000/api/logs'; // หรือ http://localhost:3000/api/logs
+  // สภาพแวดล้อม Proxmox Inter-VM (กลุ่ม 5 ดึงตรงจากกลุ่ม 6):
+  const API_URL = 'http://192.168.100.106/api/logs'; 
+  // หากทดสอบบน Local ให้ใช้: const API_URL = 'http://localhost:3000/api/logs';
+  // หากเรียกผ่าน Gateway ภายนอก: const API_URL = 'http://172.16.10.200:3006/api/logs';
 
   try {
     const response = await fetch(API_URL);
@@ -112,7 +120,10 @@ setInterval(fetchIoTLogs, 20000);
 ```python
 import requests
 
-API_URL = "http://10.10.10.16:3000/api/logs"
+# สภาพแวดล้อม Proxmox Inter-VM (กลุ่ม 5 ดึงตรงจากกลุ่ม 6)
+API_URL = "http://192.168.100.106/api/logs"
+# หากทดสอบบน Local ให้ใช้: API_URL = "http://localhost:3000/api/logs"
+# หากเรียกผ่าน Gateway ภายนอก: API_URL = "http://172.16.10.200:3006/api/logs"
 
 def get_iot_logs():
     try:
